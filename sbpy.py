@@ -1,5 +1,5 @@
 ################################################################################
-# Libraries and modules
+# Libraries and modules used
 import sys
 import csv
 import re
@@ -17,6 +17,7 @@ from scipy.cluster.hierarchy import dendrogram, linkage
 from Bio.PDB import PDBList
 from Bio.PDB.PDBParser import PDBParser
 ################################################################################
+# This function receives in input the path to the PDB file and returns in output the list of residues in the protein
 def residues_from_pdb(pdb_path):
     nodes = []
     structure = PDBParser(QUIET=True).get_structure('Protein', pdb_path)
@@ -27,6 +28,7 @@ def residues_from_pdb(pdb_path):
                 nodes.append(node)
     return nodes
 ################################################################################
+# This function receives in input the path to the directory containing the EDGES files and returns in output a list containing the names of the files inside the directory
 def edges_filenames(path):
     files = os.listdir(path)
     def atoi(text):
@@ -36,6 +38,11 @@ def edges_filenames(path):
     files.sort(key = natural_keys)
     return files
 ################################################################################
+# This function receives in input:
+# - list containg the names of the files in EDGES directory
+# - path to the EDGES directory
+# This function returns in output a list of dataframes containing the information present in every edges file. The feature of this function is that it is able 
+# to modify the residual name so as not to fall into possible errors present in the residual names.
 def edges_file_saving(filenames_list, path):    
     edf = []
     for i in filenames_list:
@@ -49,6 +56,9 @@ def edges_file_saving(filenames_list, path):
             row['NodeId2'] = row['NodeId2'][::-1].split(':', 1)[1][::-1]
     return edf
 ################################################################################
+# This function receives in input a list of dataframes containing the information present in every edges file and returns in output a dictionary whose keys 
+# are represented by the types of interactions detected within the trajectory and as values the total number of bonds present within the trajectory, for that 
+# type of interaction.
 def interaction(edges_list):   
     itn = []
     for i in edges_list:
@@ -61,13 +71,14 @@ def interaction(edges_list):
         dict_itn[i] = itn.count(i)
     return dict_itn
 ################################################################################
-def weight(interactions_list, residues_list, N):
+# This function receives in input:
+# - a dictionary with the interactions list
+# - a residues list involved in the trajectory
+# This function returns in output the weight, so the importance assigned to every interaction, following the tf-idf function
+def weight(interactions_list, residues_list):
     tf_idf = []
     for i in interactions_list:
-        if(len(residues_list) < 300):
-            tf = (interactions_list[i]/N )/( sum( interactions_list.values())/N)
-        else:
-            tf = np.exp((interactions_list[i]/N )/( sum( interactions_list.values())/N))
+        tf = (interactions_list[i]/N )/( sum( interactions_list.values())/N)
         idf = np.log(N/(N*(interactions_list[i]/sum(interactions_list.values()))))
         tf_idf.append(tf*idf)
     return tf_idf
@@ -110,6 +121,10 @@ def distance_split_contact(contacts_list, interaction):
             m[i][j] = distance(d1, d2)
     return m
 ################################################################################
+# This function recevies in input:
+# - a distance matrix
+# - a "linked" object
+# This function returns in output the optimal number of clusters obtained from the search of the maximum of the silhouette value
 def opt_n_clust(dmat, linked):
     n_clust = range(2, int(np.sqrt(dmat.shape[0])))
     score = []
@@ -118,10 +133,17 @@ def opt_n_clust(dmat, linked):
         clust_labels = scipy.cluster.hierarchy.cut_tree(linked, n_clusters = i)
         for j in clust_labels:
             labels.append(int(j))
-        score.append(metrics.silhouette_score(dmat, labels, metric = 'precomputed'))
-    print(score)
+        score.append(metrics.silhouette_score(dmat, labels, metric = 'precomputed')
     return np.array(score).argmax() + 2
 ################################################################################
+# This function recevies in input:
+# - a distance matrix
+# - a "linked" object
+# - the optimal number of cluster
+# This function returns in output:
+# - a list of labels containing the cluster to which each snapshot has been assigneda list of labels 
+# - a list containing the most important snapshot for every cluster. A snapshot is considered the most important within its cluster if it is the one that reaches 
+# the maximum silhouette value, that is the snapshot that has been best classified and therefore the most representative                      
 def most_important_snapshot(dmat, linked, k):
     dmat = pd.DataFrame(dmat)
     labels, snapshots = [], []
@@ -135,6 +157,10 @@ def most_important_snapshot(dmat, linked, k):
         snapshots.append(silhouette_max)
     return labels, snapshots
 ################################################################################
+# This function receives in input:
+# - a list containing the most important snapshot
+# - a list of dataframes containing the information present in every edges file
+# This function returns in output a dataframe containing the relevant interaction from a cluster to another based on the most important snapshot
 def relevant_interaction(snapshot, edges_list):
     df = pd.DataFrame(columns=['FromSnapshot', 'ToSnapshot','FromCluster', 'ToCluster', 'NodeId1', 'Interaction', 'NodeId2'])
     l = []
@@ -159,6 +185,13 @@ def relevant_interaction(snapshot, edges_list):
                 df = df.append(row_to_add, ignore_index = True)
     return df   
 ################################################################################
+# This function receives in input:
+# - a distance matrix
+# - a list containing the most important snapshot
+# This function returns in output a dataframe containing:
+# - the labels for the cluster to which the snapshot was assigned
+# - whether the cluster is representative (= 1) or not (= 0), one for each cluster
+# - the normalized distance of each snasphot from the representative one, obtained from the distance matrix
 def output_info(matrix, representative_list):
     matrix = pd.DataFrame(matrix)
     labels = representative_list[0]
@@ -172,7 +205,6 @@ def output_info(matrix, representative_list):
 
     return info   
 ################################################################################
-
 def main():
     p1, p2, p3 = sys.argv[1], sys.argv[2], sys.argv[3]
     os.makedirs(p3 + "/" + "output")
