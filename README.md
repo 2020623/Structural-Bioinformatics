@@ -1,2 +1,2 @@
-# Structural-Bioinformatics
-Structural Bioinformatics project
+Lorenzo Corrado
+# Structural Bioinformatics project
