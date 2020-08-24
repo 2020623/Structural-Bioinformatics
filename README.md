@@ -7,4 +7,4 @@
 > cd desktop/new
 5. Far partire lo script scrivendo sulla linea di comando:
 > python algo.py protein/pdb/vhl_0.pdb protein/edges protein
-\textcolor{red}{red}
+<span style="color:blue"> algo.py text</span>
