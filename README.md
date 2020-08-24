@@ -1,7 +1,7 @@
 # How to run the script
 
 Suppose you have on the Desktop:
-   - a python script, called $\color{red}{\text{algo.py}}$; <span style="color:red"> *algo.py* text</span>
+   - a python script, called $\color{red}{\text{algo.py}}$; <font color = 'red'> *algo.py* text</font>
    - an example directory called $\color{blue}{\text{protein}}$ which contains:
        - the  **pdb** directory;
        - the  **edges** directory.
